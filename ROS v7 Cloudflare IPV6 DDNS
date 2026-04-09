@@ -3,7 +3,7 @@
 :local WAN6Interface "填写IPv6的接口";
 :local IPv6pool "填写IPv6地址池";
 
-:local CFDomain "填写二级域名";
+:local CFDomain "填写域名";
 :local CFEmail "填写邮箱";
 :local CFGlobalAPIKey "填写Global API Key";
 :local CFZoneId "填写Zone ID";
