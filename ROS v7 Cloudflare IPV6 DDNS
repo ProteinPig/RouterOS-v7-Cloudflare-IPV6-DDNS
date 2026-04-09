@@ -17,21 +17,19 @@
     :set WanIP6 [/ipv6 address get [find from-pool=$IPv6pool] address]; #获取指定的IPv6地址，get [find from-pool=$IPv6pool]也可以改为 get 0 ，默认第一个地址应该就是公网IPv6
     :set WanIP6 [:pick $WanIP6 0 [:find $WanIP6 "/"]]; #去除前缀长度，/64字样
 
-    :log info ("CF: 解析IPv6域名： $ResolvedIP6");
-    :log info ("CF: 当前WAN口公网IPv6： $WanIP6");
-
     :local url    "https://api.cloudflare.com/client/v4/zones/$CFZoneId/dns_records/$CFDomainId"
     :local header "X-Auth-Email: $CFEmail, X-Auth-Key: $CFGlobalAPIKey, content-type: application/json"
-    :local data   "{\"type\":\"AAAA\",\"name\":\"$CFDomain\",\"content\":\"$WanIP6\"}" #去掉了TTL，默认5分钟，有需要可以加上：,\"ttl\":60
+    :local data   "{\"type\":\"AAAA\",\"name\":\"$CFDomain\",\"content\":\"$WanIP6\",\"ttl\":60}"
 
     :if ($ResolvedIP6 != $WanIP6) do={
     /tool fetch http-method=put mode=https http-header-field=$header http-data=$data url=$url as-value output=user;
     :delay 2s;
     /ip dns cache flush;
+
+    :log info ("CF: 解析IPv6域名： $ResolvedIP6");
+    :log info ("CF: 当前WAN口公网IPv6： $WanIP6");
     :log info "CF: 成功更新WAN口IPv6公网地址！"
-    } else={
-        :log info "CF: WAN口IPv6公网地址与解析的地址匹配，无需更新！"
     }
 } else={
-    :log info ("CF: 本机没有启用IPv6或配置不正确")
+    :log info "CF: 本机没有启用IPv6或配置不正确"
 }
