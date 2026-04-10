@@ -1,0 +1,34 @@
+:local WANInterface "填写IPv4的接口";
+  
+:local CFDomain "填写域名";
+:local CFEmail "填写邮箱";
+:local CFGlobalAPIKey "填写Global API Key";
+:local CFZoneId "填写Zone ID";
+:local CFDomainId "填写Domain ID";
+  
+:global ResolvedIP4 "";
+:set ResolvedIP4 [:resolve $CFDomain server=223.5.5.5];
+  
+:global WanIP4 "";
+:set WanIP4 [/ip address get [find interface=$WANInterface] address];
+:set WanIP4 [:pick $WanIP4 0 [:find $WanIP4 "/"]];
+:if ([:len $WanIP4] != 0) do={
+
+    :log info ("CF: 解析IPv4域名： $ResolvedIP4");
+    :log info ("CF: 当前WAN口公网IPv4： $WanIP4");
+    
+    :local url "https://api.cloudflare.com/client/v4/zones/$CFZoneId/dns_records/$CFDomainId"
+    :local header "X-Auth-Email: $CFEmail, X-Auth-Key: $CFGlobalAPIKey, content-type: application/json"
+    :local data "{\"type\":\"A\",\"name\":\"$CFDomain\",\"content\":\"$WanIP4\",\"ttl\":60}"
+    
+    :if ($ResolvedIP4 != $WanIP4) do={
+        /tool fetch http-method=put mode=https http-header-field=$header http-data=$data url=$url as-value output=user;
+        :delay 2s;
+        /ip dns cache flush;
+        :log info "CF: 成功更新WAN口IPv4公网地址！"
+    } else={
+        :log info "CF: WAN口IPv4公网地址与解析的地址匹配，无需更新！"
+    }
+} else={
+    :log info ("本机没有启用IPv4或配置不正确")
+}
